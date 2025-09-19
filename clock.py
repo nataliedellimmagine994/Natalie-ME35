@@ -46,13 +46,14 @@ while True:
         time.sleep(1)
     else:
         print("api here")
-        url = "https://www.meteosource.com/api/v1/free/point?place_id=postal-us-02155&sections=current&language=en&units=auto&key=ounlo9e0d9ugrjd1ylahu6xhfl1ksvau7qj3t6hi"
+        url = "https://www.meteosource.com/api/v1/free/point?place_id=mount-washington-5143341&sections=current%2Chourly&language=en&units=auto&key=ounlo9e0d9ugrjd1ylahu6xhfl1ksvau7qj3t6hi"
 
         response = urequests.get(url)
 
         if response.status_code == 200:
             data = response.json()
             wind = data["current"]["wind"]["speed"]
+            print(wind)
             angle_wind = int(180 - (12*wind))
             servo1.write_angle(angle_wind)
         else:
