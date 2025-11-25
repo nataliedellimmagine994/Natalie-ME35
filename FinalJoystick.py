@@ -1,0 +1,146 @@
+import network
+import time
+from umqtt.simple import MQTTClient
+import ssl
+import secrets
+import neopixel
+import json
+from machine import Pin, ADC
+
+class MQTTDevice:
+    def __init__(self):
+        self.SSID = secrets.SSID
+        self.PASSWORD = secrets.PWD
+        self.entered_time = 0
+        
+        # MQTT settings
+        self.MQTT_BROKER = secrets.mqtt_url 
+        self.MQTT_PORT = 8883
+        self.MQTT_USERNAME = secrets.mqtt_username 
+        self.MQTT_PASSWORD = secrets.mqtt_password 
+        self.CLIENT_ID = "Robot1"
+        self.TOPIC_PUB = "/Controller"
+    
+    def connect_wifi(self):
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
+        if not self.wlan.isconnected():
+            print("Connecting to WiFi...")
+            print(self.SSID, self.PASSWORD)
+            self.wlan.connect(self.SSID, self.PASSWORD)
+            timeout = 10
+            while not self.wlan.isconnected() and timeout > 0:
+                time.sleep(1)
+                timeout -= 1
+            
+        if self.wlan.isconnected():
+            print("WiFi Connected! IP:", self.wlan.ifconfig()[0])
+            return True
+        else:
+            print("WiFi connection failed!")
+            return False
+
+    def publish(self, topic, msg):
+        self.client.publish(topic, msg)
+        print(f"Published message to topic '{topic}' : '{msg}'")
+        
+    def subscribe(self, topic):
+        self.client.subscribe(topic)
+        
+    def sub_cb(self, topic, msg):
+        json_str = json.loads(msg)
+        print(f"Received message on topic '{topic.decode()}' : '{msg.decode()}'")
+
+    def mqtt_connect(self):
+        try:
+            print(self.MQTT_USERNAME)
+            self.client = MQTTClient(
+                client_id = self.CLIENT_ID,
+                server = self.MQTT_BROKER,
+                port = self.MQTT_PORT,
+                user = self.MQTT_USERNAME,
+                password = self.MQTT_PASSWORD,
+                keepalive=30,
+                ssl = True,  # Enable SSL
+                ssl_params = {'server_hostname': self.MQTT_BROKER}  # Important for certificate validation
+            )
+            self.client.set_callback(self.sub_cb)
+            self.client.connect()
+            
+            print("MQTT Connected successfully!")
+            return self.client
+        except OSError as e:
+            print(f"MQTT Connection failed: {e}")
+            return None
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return None
+
+
+mqtt_obj = MQTTDevice()
+
+if mqtt_obj.connect_wifi():
+    import ntptime
+    print("Syncing time...")
+    try:
+        ntptime.settime()
+        print("Time synced!")
+    except:
+        print("Time sync failed!")
+
+    client = mqtt_obj.mqtt_connect()
+    if client:
+        mqtt_obj.subscribe("/Controller")
+
+
+vrx = ADC(Pin(33)) # Joystick X
+vry = ADC(Pin(34)) # Joystick Y
+sw = Pin(5, Pin.IN) # Joystick button
+open_gate = False
+json_data = {"gate": open_gate, "drive": {0}, "turn": {0}}
+
+
+count = 0
+while True:
+    # Get values from joystick
+    x = vrx.read_u16()
+    y = vry.read_u16()
+    button = sw.value()
+      
+    if button == 0:
+        # debounce
+        now_time = time.ticks_ms()
+        if(now_time - mqtt_obj.entered_time < 500):
+            continue
+        mqtt_obj.entered_time = now_time
+        
+        # update fan state in json
+        open_gate = not open_gate
+        json_data["gate"] = open_gate
+        
+    # update servo state based on joystick Y position
+    if y > 65000:
+        json_data["drive"] = -1
+    elif y == 0:
+        json_data["drive"] = 1
+    else:
+        json_data["drive"] = 0
+        
+    # update base state based on joystick X position
+    if x > 65000:
+        json_data["turn"] = 1
+    elif x == 0:
+        json_data["turn"] = -1
+    else:
+        json_data["turn"] = 0
+        
+    #print(json_data)
+    
+    # Publish every 5 loops- this keeps the sample rate of user input high, 
+    # but doesn't overload the MQTT server
+    if count == 5:
+        mqtt_obj.client.publish(mqtt_obj.TOPIC_PUB, json.dumps(json_data))
+        print("sent message:", json_data)
+        count = 0
+    time.sleep(.01)
+    count += 1

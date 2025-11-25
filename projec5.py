@@ -32,21 +32,21 @@ class MQTTDevice:
             return
         self.entered_time = now_time
         self.client.publish(self.TOPIC_PUB, b'{"color":[160,32,240], "note":392}')  # Purple, C note
-        print("Button 1 was pressed - Purple, C note")
+        print("Button 1 was pressed - Purple, G note")
     def button2_pressed(self, p):
         now_time = time.ticks_ms()
         if(now_time - self.entered_time_btn2 < 200):
             return
         self.entered_time_btn2 = now_time
         self.client.publish(self.TOPIC_PUB, b'{"color":[255,0,0], "note":440}')  # Red, E note
-        print("Button 2 was pressed - Red, E note")
+        print("Button 2 was pressed - Red, A note")
     def button3_pressed(self, p):
         now_time = time.ticks_ms()
         if(now_time - self.entered_time_btn3 < 200):
             return
         self.entered_time_btn3 = now_time
         self.client.publish(self.TOPIC_PUB, b'{"color":[0,255,0], "note":494}')  # Green, G note
-        print("Button 3 was pressed - Green, G note")
+        print("Button 3 was pressed - Green, B note")
     def connect_wifi(self):
         self.wlan = network.WLAN(network.STA_IF)
         self.wlan.active(True)
