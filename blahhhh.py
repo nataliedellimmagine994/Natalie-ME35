@@ -18,9 +18,13 @@ class Count(object):
         #print(self.counter)
         return self.counter
     
-class Motor(Count):
-    def __init__(self,m1,m2, A, B):
-        self.enc = Count(A,B)
+'''class Motor(Count):
+    def __init__(self,m1,m2, A=None, B=None):
+        
+        if not A is None :
+            self.enc = Count(A,B)
+        else:
+            self.enc = None
         self.M1 = PWM(m1, freq=100, duty_u16=0)
         self.M2 = PWM(m2, freq=100, duty_u16=0)
         self.stop()
@@ -71,7 +75,25 @@ class Motor(Count):
         else:
             self.M1.duty_u16(0)
             self.M2.duty_u16(int(speed*65535/100))
-    
+    '''
+
+class Motor():
+    def __init__(self,m1,m2):
+        self.M1 = PWM(m1, freq=100, duty_u16=0)
+        self.M2 = PWM(m2, freq=100, duty_u16=0)
+        self.stop()          
+            
+    def stop(self):
+        self.M1.duty_u16(0) 
+        self.M2.duty_u16(0) 
+
+    def start(self, direction = 0, speed = 99):
+        if direction:
+            self.M1.duty_u16(int(speed*65535/100)) 
+            self.M2.duty_u16(0)
+        else:
+            self.M1.duty_u16(0)
+            self.M2.duty_u16(int(speed*65535/100)) 
 
             
 
@@ -82,8 +104,8 @@ class Motor(Count):
 #print(count.value())
 
 #setting up motor with encoder
-Motor1 = Motor(14,27, 33, 32)
-Motor1.start()
-print("starting")
+#Motor1 = Motor(14,27, 33, 32)
+#Motor1.start()
+#print("starting")
 #Motor1.pos() # to read the encoder value for Motor 1
 
