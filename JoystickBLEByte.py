@@ -46,7 +46,6 @@ def peripheral(name):
         print('closing up')
         
 def sendMessage(message):
-    #payload = str(json.dumps(message))
     p.send(message)
     print("sent message")
 
@@ -59,8 +58,6 @@ def collectData():
     button = sw.value()
     speed = sw2.value()
     
-      
-    
     if button == 0:
         now = time.ticks_ms()
 
@@ -68,12 +65,10 @@ def collectData():
         if time.ticks_diff(now, last_press) < 300:
             print("passed")
             pass
-        
         else:
             print("toggle")
             open_gate = not open_gate
-        #return bytes([open_gate, turn_data, drive_data])
-
+        
             last_press = now  # update timestamp
     
     if speed == 0:
@@ -85,35 +80,28 @@ def collectData():
         
         else:
             toggle_speed = not toggle_speed
-        #return bytes([open_gate, turn_data, drive_data])
 
-            last_press_button = now  # update timestamp'''
+            last_press_button = now  # update timestamp
     
     # update motors based on joystick x and y position
     if x > 60000:
         # turn right
         turn_data = 1
-        #json_data["t"] = 1
     elif x < 10000:
-        turn_data = 2
         # turn left
-        #json_data["t"] = -1
+        turn_data = 2
     else:
         turn_data = 0
         
     if y < 10000:
-        drive_data = 1
         # drive forward
-        #json_data["d"] = 1
+        drive_data = 1
     elif y > 60000:
         # reverse
         drive_data = 2
-        #json_data["d"] = -1
     else:
         # stop
         drive_data = 0
-        #json_data["t"] = 0
-        #json_data["d"] = 0
     
     return bytes([open_gate, turn_data, drive_data, toggle_speed]) #json_data
          
